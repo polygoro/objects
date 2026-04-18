@@ -1,0 +1,12 @@
+# Korocube P2
+
+UNIT = 50
+HALF = UNIT / 2
+HR = 19 / 2
+FR = 2
+
+box UNIT UNIT UNIT
+ | fillet FR
+ | faces >Z
+ | points [(0, 0), (0, HALF)]
+ | hole HR
