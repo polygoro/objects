@@ -1,0 +1,11 @@
+# KoroCube type G
+
+UNIT = 50
+HALF = UNIT / 2
+HR = 19 / 2
+FR = 2
+
+box UNIT UNIT HALF
+ | fillet FR
+ | faces <Y
+ | moveto 0 HALF/2 | circle HR | cut

@@ -1,0 +1,4 @@
+# KoroCube Type 1
+UNIT = 50
+FR = 2
+box UNIT UNIT UNIT | fillet FR
