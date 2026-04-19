@@ -1,0 +1,15 @@
+# Korocube type 4
+
+UNIT = 50
+HALF = UNIT / 2
+HR = 19 / 2
+FR = 2
+
+box UNIT UNIT UNIT
+ | fillet FR
+ | faces <Y
+ | moveto 0 HALF | hole HR
+ | faces >X
+ | moveto 0 HALF | hole HR
+ | faces >X
+ | circle HR | polygon 4 (HR-1) at: 0 4 | cut
