@@ -3,7 +3,11 @@
 
 ## パーツ
 
-- 1.stl
+### 1.stl
+![1.stl](1.png)
 
-<script src="https://embed.github.com/view/3d/polygoro/objects/main/korocube/1.stl"></script>
+### 2.stl
+![2.stl](2.png)
 
+### 11.stl
+![11.stl](11.png)
