@@ -1,0 +1,24 @@
+# Korocube Type 11
+
+UNIT = 50
+HALF = UNIT / 2
+QUAR = UNIT / 4
+HR = 19 / 2
+FR = 2
+
+path = workplane XZ | wire [
+       (-UNIT, 0),
+       arc (-QUAR, 0) (0, QUAR) center: (-QUAR, QUAR),
+       (0, UNIT)
+]
+route = path | sweep (circle 10)
+
+box UNIT UNIT UNIT
+ | fillet FR
+ | faces <Y
+ | moveto 0 HALF | circle HR | cut
+ | faces >X
+ | moveto 0 HALF | circle HR | cut
+ | diff route
+ | faces <X
+ | polygon 4 (HR-1) at: 0 4 | cut HALF
