@@ -1,0 +1,65 @@
+# GeoFrame -- 正多角形フレームをヒンジでつなぐ知育玩具
+# polygoro/objects/geoframe (CadQuery: square.py / triangle.py) の移植
+#
+# 元実装からの単純化:
+#   - 三角・四角・五角を別々に書いていたのを、正n角形1本に統合 (-D sides=3)
+#   - 辺長をヒンジ軸どうしの距離 edge で全角形共通にした
+#     (元は四角 31mm / 三角 29.4mm で、混ぜて組むと位置がずれた)
+#   - ナックル配置は辺を4スロットに分け、自分は1・3番、相手(180°回転)は2・4番。
+#     どの辺どうしでも噛み合う
+#
+# 座標: タイルは XY 平面、z = 0..thick。ヒンジ軸は厚みの中心 z = thick/2 を通る。
+# 組み上げた多面体の面はタイルの中心面に一致し、多面体の辺長が edge になる。
+
+@param choices:[3, 4, 5, 6] desc:"角数"
+sides = 4
+@param 20..60 desc:"辺長: ヒンジ軸どうしの距離 (mm)"
+edge = 35
+@param 2..4 step:0.5 desc:"厚み = ナックル直径 (mm)"
+thick = 3
+@param 1.5..4 step:0.5 group:"フレーム" desc:"枠の幅 (mm)"
+rim = 3
+@param 1.5..3 step:0.1 group:"ヒンジ" desc:"ヒンジ軸から枠外周までの距離 (mm)"
+axis_gap = 2.2
+@param 0.2..0.8 step:0.05 group:"ヒンジ" desc:"ナックル間の軸方向すきま (mm)"
+gap = 0.4
+@param 0.4..1.2 step:0.05 group:"ヒンジ" desc:"ピンの高さ (mm)。gap を超えた分だけ穴に入る"
+pin_h = 0.8
+@param 3..8 step:0.5 group:"ヒンジ" desc:"辺の両端でナックルを置かない長さ (mm)。三角形の鋭角で隣の辺と当たらない値"
+margin = 5
+
+# --- 導出値 ---
+half = 180 / sides
+r_k = thick / 2                            # ナックル半径
+ah = edge / 2 / tan(half)                  # 中心からヒンジ軸までの距離
+ao = ah - axis_gap                         # 枠の外周の内接半径
+ai = ao - rim                              # 枠の内周の内接半径
+u = edge / 2 - margin                      # ナックルを置く範囲 -u..u
+ov = 1.5                                   # 枠へのめり込み (外周の R1.4 を覆う)
+
+# 正n角形。上辺が y = a で水平
+def ngon($a) = polyline [($a / cos(half) * cos(90 + half + 360 * $i / sides),
+                          $a / cos(half) * sin(90 + half + 360 * $i / sides)) for $i in range(sides)]
+
+# 枠。外周は R1.4 でほぼ半円に丸め、折ったとき隣の枠と当たらないようにする
+ring = (ngon(ao)) - (ngon(ai)) | extrude thick | fillet 0.8
+outline = ngon(ao) | extrude thick | fillet 1.4
+frame = ring * outline
+
+# ナックル: 軸上の丸棒 + 枠へつなぐブリッジ。上辺 (y = ah) に x0..x1 で置く
+def knuckle($x0, $x1) = union [
+    cylinder r_k ($x1 - $x0) | rotate 0 90 0 | translate (($x0 + $x1) / 2) ah r_k,
+    box ($x1 - $x0) (axis_gap + ov) thick | translate (($x0 + $x1) / 2) (ah - (axis_gap + ov) / 2) r_k
+  ]
+
+# ピン(+X 向き)と受け穴(-X 向き)。どちらもヒンジ軸上
+def pin($x) = cone 0.9 0.4 (pin_h + 0.2) | rotate 0 90 0 | translate ($x + pin_h / 2 - 0.1) ah r_k
+def socket($x) = cone 1.0 0.5 (pin_h + 0.3) | rotate 0 -90 0 | translate ($x - pin_h / 2 + 0.05) ah r_k
+
+# 1辺ぶん。スロット1 (受け穴) とスロット3 (ピン)
+k1 = knuckle(-u, -u / 2 - gap / 2) | diff socket(-u / 2 - gap / 2)
+k3 = knuckle(gap / 2, u / 2 - gap / 2) | union pin(u / 2 - gap / 2)
+hinge = k1 + k3
+
+hinges = union [(hinge | rotate 0 0 (360 * $i / sides)) for $i in range(sides)]
+frame + hinges
