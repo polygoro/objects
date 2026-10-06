@@ -11,7 +11,7 @@
 # 座標: タイルは XY 平面、z = 0..thick。ヒンジ軸は厚みの中心 z = thick/2 を通る。
 # 組み上げた多面体の面はタイルの中心面に一致し、多面体の辺長が edge になる。
 
-@param choices:[3, 4, 5, 6] desc:"角数"
+@param choices:[3, 4, 5, 6, 8, 10] desc:"角数"
 sides = 4
 @param 20..60 desc:"辺長: ヒンジ軸どうしの距離 (mm)"
 edge = 35
@@ -22,9 +22,9 @@ rim = 3
 @param 1.5..3 step:0.1 group:"ヒンジ" desc:"ヒンジ軸から枠外周までの距離 (mm)"
 axis_gap = 2.2
 @param 0.2..0.8 step:0.05 group:"ヒンジ" desc:"ナックル間の軸方向すきま (mm)"
-gap = 0.4
-@param 0.4..1.2 step:0.05 group:"ヒンジ" desc:"ピンの高さ (mm)。gap を超えた分だけ穴に入る"
-pin_h = 0.8
+gap = 0.3
+@param 0.6..1.4 step:0.05 group:"ヒンジ" desc:"半球ピンの半径 = 突き出し (mm)。gap を超えた分だけ穴に入り、これが保持力になる"
+pin_h = 1.0
 @param 3..8 step:0.5 group:"ヒンジ" desc:"辺の両端でナックルを置かない長さ (mm)。三角形の鋭角で隣の辺と当たらない値"
 margin = 5
 
@@ -36,6 +36,7 @@ ao = ah - axis_gap                         # 枠の外周の内接半径
 ai = ao - rim                              # 枠の内周の内接半径
 u = edge / 2 - margin                      # ナックルを置く範囲 -u..u
 ov = 1.5                                   # 枠へのめり込み (外周の R1.4 を覆う)
+rs = pin_h + 0.05                          # 受け穴の球の半径。ピンより 0.05 大きく、はまると同心でガタが出ない
 
 # 正n角形。上辺が y = a で水平
 def ngon($a) = polyline [($a / cos(half) * cos(90 + half + 360 * $i / sides),
@@ -52,9 +53,12 @@ def knuckle($x0, $x1) = union [
     box ($x1 - $x0) (axis_gap + ov) thick | translate (($x0 + $x1) / 2) (ah - (axis_gap + ov) / 2) r_k
   ]
 
-# ピン(+X 向き)と受け穴(-X 向き)。どちらもヒンジ軸上
-def pin($x) = cone 0.9 0.4 (pin_h + 0.2) | rotate 0 90 0 | translate ($x + pin_h / 2 - 0.1) ah r_k
-def socket($x) = cone 1.0 0.5 (pin_h + 0.3) | rotate 0 -90 0 | translate ($x - pin_h / 2 + 0.05) ah r_k
+# ピン(+X 向き)と受け穴(-X 向き)。どちらもヒンジ軸上の球面。
+# ピンは端面から半径 pin_h の半球で、gap より長く突き出す。はめるときナックルが軸方向に
+# (pin_h - gap) だけ押し広げられ、穴に落ち込んで元に戻る(スナップフィット)。
+# 受け穴の球は中心が相手の端面から gap だけ外側にあり、はまるとピンの半球とほぼ同心になる
+def pin($x) = sphere pin_h | translate $x ah r_k
+def socket($x) = sphere rs | translate ($x + gap) ah r_k
 
 # 1辺ぶん。スロット1 (受け穴) とスロット3 (ピン)
 k1 = knuckle(-u, -u / 2 - gap / 2) | diff socket(-u / 2 - gap / 2)
